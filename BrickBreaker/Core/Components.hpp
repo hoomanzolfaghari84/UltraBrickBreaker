@@ -25,6 +25,15 @@ struct Renderable {
     int zIndex = 0; // Optional layering
 };
 
+struct Rectangle {
+    sf::RectangleShape shape;
+};
+
+struct Circle {
+    sf::CircleShape shape;
+};
+
+
 // Generic Tag component (per entity)
 struct Tag {
     std::string name;

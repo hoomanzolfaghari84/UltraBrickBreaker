@@ -151,6 +151,10 @@ public:
             availableEntities.push(e);
     }
 
+    bool isValid(Entity e) const {
+        return e >= 0 && e < MAX_ENTITIES && signatures[e].any();
+    }
+
 private:
     std::queue<Entity> availableEntities;
     std::array<Signature, MAX_ENTITIES> signatures{};
