@@ -1,5 +1,5 @@
 #pragma once
-#include "Utils/Vec2.hpp"
+#include "../Utils/Vec2.hpp"
 #include <SFML/Graphics/Color.hpp>
 
 // Spatial data
