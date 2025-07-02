@@ -5,7 +5,7 @@ constexpr float WINDOW_HEIGHT = 600;
 
 constexpr float PADDLE_WIDTH = 100;
 constexpr float PADDLE_HEIGHT = 20;
-constexpr float PADDLE_SPEED = 300;
+constexpr float INITIAL_PADDLE_SPEED = 300;
 
 constexpr float BALL_SIZE = 12;
 constexpr float INITIAL_BALL_SPEED = 250;

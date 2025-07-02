@@ -18,6 +18,11 @@ struct Vec2 {
         return *this;
     }
 
+    Vec2& operator-=(const Vec2& other) {
+        x -= other.x; y -= other.y;
+        return *this;
+    }
+
     Vec2 operator-(const Vec2& other) const {
         return Vec2{ x - other.x, y - other.y };
     }
@@ -69,8 +74,13 @@ struct Vec2 {
     static Vec2 ZeroVec() {
         return Vec2{ 0.f, 0.f };
     }
+
+    static float Dot(Vec2 a, Vec2 b) {
+        return a.x * b.x + a.y * b.y;
+    }
 };
 
 inline Vec2 operator*(float scalar, const Vec2& vec) {
     return Vec2{ vec.x * scalar, vec.y * scalar };
 }
+

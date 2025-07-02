@@ -32,6 +32,9 @@ void Game::Start()
             {
                 m_Window.close();
             }
+            else if (event->is<sf::Event::KeyPressed>() || event->is<sf::Event::KeyReleased>()) {
+                HandleInput(event);
+            }
         }
 
         Update(dt);
@@ -53,8 +56,6 @@ void Game::SetupGame()
 
 void Game::Update(float dt)
 {
-    SInput();
-    
     HandleEvents();
     
     UpdateAllScenes(dt);
@@ -66,8 +67,23 @@ void Game::Render()
 }
 
 
-void Game::SInput()
+void Game::HandleInput(const std::optional<sf::Event> event)
 {
+
+    if (auto keyPressedEvent = event->getIf<sf::Event::KeyPressed>()) {
+        
+        for (auto& scene : m_Scenes)
+        {
+            scene->HandleEvent<KeyPressedEvent>(KeyPressedEvent(Key::fromSFMLKey(keyPressedEvent->code)));
+        }
+     
+    }
+    else if (auto keyPressedEvent = event->getIf<sf::Event::KeyReleased>()) {
+        for (auto& scene : m_Scenes)
+        {
+            scene->HandleEvent<KeyReleasedEvent>(KeyReleasedEvent(Key::fromSFMLKey(keyPressedEvent->code)));
+        }
+    }
        /* if ( m_EntityManager->hasComponent<Velocity>(m_Player)) {
             auto& vel = m_EntityManager->getComponent<Velocity>(m_Player);
             vel.velocity = { 0.f, 0.f };

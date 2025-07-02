@@ -47,7 +47,7 @@ private:
 	void Render();
 
 
-	void SInput();
+	void HandleInput(const std::optional<sf::Event> event);
 	void HandleEvents();
 
 	

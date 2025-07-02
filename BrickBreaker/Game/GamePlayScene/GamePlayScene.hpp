@@ -33,10 +33,13 @@ private:
 	float m_BrickSpawnTimer = 0.f;
 
 	float m_BallSpeed = INITIAL_BALL_SPEED;
-	
+
 	Entity m_Paddle = -1;
+	float m_PaddleSpeed = INITIAL_PADDLE_SPEED;
 	
 	int m_Score = 0;
+
+	Entity m_Ground = -1;
 	
 	sf::Font m_Font;
 	sf::Text* m_ScoreText = nullptr;

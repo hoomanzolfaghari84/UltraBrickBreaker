@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include "ECS.hpp"
 #include "Components.hpp"
 #include "Collision.hpp"
@@ -11,51 +12,63 @@ public:
     virtual ~System() = default;
 };
 
-class MovementSystem : public System {
-public:
-    void update(EntityManager& em, float dt) override {
-        for (Entity e = 0; e < MAX_ENTITIES; ++e) {
-            if (em.hasComponent<Kinematics>(e)) {
-                auto& kin = em.getComponent<Kinematics>(e);
-                kin.position += kin.velocity * dt;
-                kin.velocity += kin.acceleration * dt; // TODO could be more realistic maybe ?? XD
-            }
-        }
-    }
-};
 
 class CollisionSystem : public System {
 public:
     CollisionSystem(EventBus& eventBus) : m_EventBus(eventBus) {}
 
     void update(EntityManager& em, float dt) override {
-        //ComponentStorage<Collider>& colliders = em.getComponents<Collider>();
+        std::unordered_map<std::pair<int, int>, std::vector<Entity>, pair_hash> spatialMap;
 
-        for (Entity entityA = 0; entityA < MAX_ENTITIES; ++entityA) {
-            for (Entity entityB = entityA + 1; entityB < MAX_ENTITIES; ++entityB) {
-                if (!em.hasComponent<Collider>(entityA) || !em.hasComponent<Collider>(entityB)) continue;
-                const auto& colA = em.getComponent<Collider>(entityA);
-                const auto& colB = em.getComponent<Collider>(entityB);
+        // Broad phase: assign entities to grid cells
+        for (Entity e = 0; e < MAX_ENTITIES; ++e) {
+            if (!em.hasComponent<Collider>(e)) continue;
+            const auto& col = em.getComponent<Collider>(e);
 
-                std::optional<CollisionEvent> result;
-
-                if (colA.type == ColliderShapeType::Circle && colB.type == ColliderShapeType::Circle) {
-                    result = circleVsCircle(colA, colB, entityA, entityB);
-                }
-                else if (colA.type == ColliderShapeType::Circle && colB.type == ColliderShapeType::Rectangle) {
-                    result = circleVsAABB(colA, colB, entityA, entityB);
-                }
-                else if (colA.type == ColliderShapeType::Rectangle && colB.type == ColliderShapeType::Circle) {
-                    result = circleVsAABB(colB, colA, entityB, entityA);
-                }
-
-                if (result) {
-                    m_EventBus.emit<CollisionEvent>(*result);
-                }
+            for (const auto& cell : SpatialHash::getOccupiedCells(col)) {
+                spatialMap[cell].push_back(e);
             }
         }
 
+        std::unordered_set<std::pair<Entity, Entity>, pair_hash> testedPairs;
+
+        // Narrow phase: only test pairs within each cell
+        for (const auto& [cell, entities] : spatialMap) {
+            for (size_t i = 0; i < entities.size(); ++i) {
+                for (size_t j = i + 1; j < entities.size(); ++j) {
+                    Entity a = entities[i];
+                    Entity b = entities[j];
+
+                    if (a > b) std::swap(a, b); // Ensure pair order
+                    if (!testedPairs.emplace(std::make_pair(a, b)).second) continue; // Already tested
+
+                    const auto& colA = em.getComponent<Collider>(a);
+                    const auto& colB = em.getComponent<Collider>(b);
+
+                    std::optional<CollisionEvent> result;
+
+                    if (colA.type == ColliderShapeType::Circle && colB.type == ColliderShapeType::Circle) {
+                        result = circleVsCircle(colA, colB, a, b);
+                    }
+                    else if (colA.type == ColliderShapeType::Circle && colB.type == ColliderShapeType::Rectangle) {
+                        result = circleVsAABB(colA, colB, a, b);
+                    }
+                    else if (colA.type == ColliderShapeType::Rectangle && colB.type == ColliderShapeType::Circle) {
+                        result = circleVsAABB(colB, colA, b, a);
+                    }
+                    else if (colA.type == ColliderShapeType::Rectangle && colB.type == ColliderShapeType::Rectangle) {
+                        result = aabbVsAabb(colA, colB, a, b);
+                    }
+
+                    if (result) {
+                        std::cout << "Emmiting Collision\n";
+                        m_EventBus.emit<CollisionEvent>(*result);
+                    }
+                }
+            }
+        }
     }
+
 
 private:
     EventBus& m_EventBus;

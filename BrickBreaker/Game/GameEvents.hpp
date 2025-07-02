@@ -33,3 +33,16 @@ struct BallOutOfBoundsEvent {
 struct ScoreChangedEvent {
     int delta;  // e.g., +100 for a brick
 };
+
+
+struct PaddleRight {
+
+};
+
+struct PaddleLeft {
+
+};
+
+struct PaddleStop {
+
+};

@@ -62,19 +62,19 @@ struct Renderable {
 
 struct RenderShape : Renderable {
     Color color = Color(255,255,255,255);
-
+    Vec2 position = Vec2::ZeroVec();
     RenderShape() = default;
 };
 
 struct RenderRectangle : public RenderShape
 {
-    Vec2 position = Vec2::ZeroVec(), size = Vec2::UnitVec();
+   Vec2 size = Vec2::UnitVec();
     float rotation = 0;
 };
 
 struct RenderCircle : public RenderShape
 {
-    Vec2 position = Vec2::ZeroVec();
+    
     float radius = 1.f;
 };
 
@@ -106,12 +106,20 @@ struct AnimationComponent {
 // Movement
 struct Kinematics
 {
-    Vec2 position = {0.f, 0.f}, velocity = { 0.f, 0.f }, acceleration = { 0.f, 0.f };
+    Vec2 position = { 0.f, 0.f }, velocity = { 0.f, 0.f }, acceleration = { 0.f, 0.f }, staticFriction = { 0.f, 0.f }, dynamicFriction = { 0.f, 0.f };
     bool isStatic = false;
-
+    
     void SetMass(float m) {
         mass = m;
         recalcInvMass();
+    }
+
+    float GetMass() const {
+        return mass;
+    }
+
+    float GetInvMass() const {
+        return invMass;
     }
 
     Kinematics() = default;

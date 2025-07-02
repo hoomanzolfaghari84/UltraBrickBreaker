@@ -1,5 +1,6 @@
 #include "GamePlayScene.hpp"
 #include "../../Core/Components.hpp"
+#include "../../Core/Phyisics.hpp"
 #include <iostream>
 #include "../GameEvents.hpp"
 
@@ -20,8 +21,6 @@
 //}
 
 
-
-
 void GamePlayScene::Initialize()
 {
     m_EntityManager->registerComponent<Transform>();
@@ -34,7 +33,9 @@ void GamePlayScene::Initialize()
     // Paddle
     m_Paddle = m_EntityManager->createEntity();
     auto k = Kinematics();
-    k.position = { WINDOW_WIDTH / 2.f, WINDOW_HEIGHT - 40 };
+    k.position = { WINDOW_WIDTH / 2.f, WINDOW_HEIGHT - (PADDLE_HEIGHT * 1.5f) };
+    k.SetMass(100);
+    k.isStatic = false;
 
     m_EntityManager->addComponent<Kinematics>(m_Paddle, k);
     auto r = RenderRectangle();
@@ -46,10 +47,10 @@ void GamePlayScene::Initialize()
     auto col = Collider();
     col.type = ColliderShapeType::Rectangle;
     col.position = k.position;
-    col.isTrigger = true;
     auto cs = RectangleCollisionShape();
     cs.halfsize = r.size * 0.5f;
     col.shape = cs;
+    col.isTrigger = false;
     m_EntityManager->addComponent<Collider>(m_Paddle, col);
 
     m_EntityManager->addComponent<Tag>(m_Paddle, { "paddle" });
@@ -61,7 +62,7 @@ void GamePlayScene::Initialize()
     Entity ball = m_EntityManager->createEntity();
     auto kc = Kinematics();
     kc.position = { WINDOW_WIDTH / 2.f, WINDOW_HEIGHT / 2.f };
-    kc.velocity = { 1.f, 1.f };
+    kc.velocity = { 0.f, INITIAL_BALL_SPEED};
 
     m_EntityManager->addComponent<Kinematics>(ball, kc);
     RenderCircle rc = RenderCircle();
@@ -73,14 +74,42 @@ void GamePlayScene::Initialize()
     auto colc = Collider();
     colc.type = ColliderShapeType::Circle;
     colc.position = kc.position;
-    colc.isTrigger = true;
     auto csc = CircleCollisionShape();
     csc.radius = rc.radius;
     colc.shape = csc;
+    colc.isTrigger = false;
     m_EntityManager->addComponent<Collider>(ball, colc);
 
     m_EntityManager->addComponent<Tag>(ball, { "ball" });
 
+    std::cout << "Created Ball\n";
+
+    // Ground
+
+    Entity ground = m_EntityManager->createEntity();
+    m_Ground = ground;
+    auto kg = Kinematics();
+    kg.position = { WINDOW_WIDTH * 0.5f, WINDOW_HEIGHT - (PADDLE_HEIGHT * 0.5f) + EPSILON };
+    kg.isStatic = true;
+    kg.SetMass(1000);
+    m_EntityManager->addComponent<Kinematics>(ground, kg);
+
+    RenderRectangle rg = RenderRectangle();
+    rg.position = kg.position;
+    rg.size = {WINDOW_WIDTH, PADDLE_HEIGHT};
+    rg.color = Color(sf::Color::Magenta.r, sf::Color::Magenta.g, sf::Color::Magenta.b, sf::Color::Magenta.a);
+    m_EntityManager->addComponent<RenderRectangle>(ground, rg);
+
+    auto colg = Collider();
+    colg.type = ColliderShapeType::Rectangle;
+    colg.position = kg.position;
+    auto csg = RectangleCollisionShape();
+    csg.halfsize = rg.size * 0.5f;
+    colg.shape = csg;
+    colg.isTrigger = false;
+    m_EntityManager->addComponent<Collider>(ground, colg);
+
+    m_EntityManager->addComponent<Tag>(ground, { "ground" });
 
     std::cout << "Created Ball\n";
 
@@ -117,15 +146,59 @@ void GamePlayScene::Initialize()
     m_EventBus->subscribe<ScoreChangedEvent>([this](const ScoreChangedEvent& e) {
         m_Score += e.delta;
         this->m_ScoreText->setString("Score: " + std::to_string(this->m_Score));
-        });
+        }
+    );
 
+    m_EventBus->subscribe<KeyPressedEvent>([this](const KeyPressedEvent& e) {
+        if (e.GetKeyCode() == Key::KeyCode::Left)
+        {
+            this->HandleEvent<PaddleLeft>(PaddleLeft());
+        }
+        else if (e.GetKeyCode() == Key::KeyCode::Right) {
+             this->HandleEvent<PaddleRight>(PaddleRight());
+        }
+        }
+    );
+
+    m_EventBus->subscribe<KeyReleasedEvent>([this](const KeyReleasedEvent& e) {
+        if (e.GetKeyCode() == Key::KeyCode::Left || e.GetKeyCode() == Key::KeyCode::Right)
+        {
+            this->HandleEvent<PaddleStop>(PaddleStop());
+        }
+        }
+    );
+
+    m_EventBus->subscribe<PaddleLeft>([this](const PaddleLeft& e) {
+        this->m_EntityManager->getComponent<Kinematics>(m_Paddle).velocity.x = -m_PaddleSpeed;
+        }
+    );
+
+    m_EventBus->subscribe<PaddleRight>([this](const PaddleRight& e) {
+        this->m_EntityManager->getComponent<Kinematics>(m_Paddle).velocity.x = m_PaddleSpeed;
+        }
+    );
+    m_EventBus->subscribe<PaddleStop>([this](const PaddleStop& e) {
+        this->m_EntityManager->getComponent<Kinematics>(m_Paddle).velocity.x = 0.f;
+        }
+    );
+
+    /*m_EventBus->subscribe<CollisionEvent>([this](const CollisionEvent& e) {
+        if (e.entityA == this->m_Ground) {
+
+        }
+        else if (e.entityB == this->m_Ground) {
+
+        }
+
+        }
+    );*/
 
     //Systems
-    auto movementSystem = std::make_unique<MovementSystem>();
-    m_Systems.push_back(std::move(movementSystem));
-
     auto collisionSystem = std::make_unique<CollisionSystem>(*m_EventBus);
     m_Systems.push_back(std::move(collisionSystem));
+
+    auto physicsSystem = std::make_unique<PhysicsSystem>(*m_EventBus);
+    m_Systems.push_back(std::move(physicsSystem));
 
 }
 
@@ -158,7 +231,7 @@ void GamePlayScene::Render(sf::RenderWindow& window)
             const RenderRectangle& c = m_EntityManager->getComponent<RenderRectangle>(e);
             DrawRectangle(c, shape);
             window.draw(shape);
-            std::cout << "Drew Rectangle\n";
+            //std::cout << "Drew Rectangle\n";
         }
         else if (m_EntityManager->hasComponent<RenderCircle>(e)) {
             auto& tr = m_EntityManager->getComponent<RenderCircle>(e);
@@ -168,16 +241,16 @@ void GamePlayScene::Render(sf::RenderWindow& window)
             shape.setPosition({ tr.position.x, tr.position.y });
             shape.setFillColor(sf::Color(tr.color.r, tr.color.g, tr.color.b, tr.color.a));
             window.draw(shape);
-            std::cout << "Drew Circle\n";
+            //std::cout << "Drew Circle\n";
         }
 
 
     }
     
     window.draw(*m_TopBar);
-    std::cout << "Drew TopBar\n";
+    //std::cout << "Drew TopBar\n";
     window.draw(*m_ScoreText);
-    std::cout << "Drew Score Text\n";
+    //std::cout << "Drew Score Text\n";
 
     /*sf::Vertex line[] =
     {
