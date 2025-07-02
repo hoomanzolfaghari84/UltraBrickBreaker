@@ -3,7 +3,7 @@
 #include "../Utils/Vec2.hpp"
 #include "../Core/Components.hpp"
 #include <iostream>
-#include "Scenes/GamePlayScene.hpp"
+#include "GamePlayScene/GamePlayScene.hpp"
 
 Game::Game()
 {

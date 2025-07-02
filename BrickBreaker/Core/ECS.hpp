@@ -70,6 +70,57 @@ public:
         return components[entityToIndex[entity]];
     }
 
+    /*auto begin() { return components.begin(); }
+    auto end() { return components.end(); }*/
+
+    auto begin() const { return components.begin(); }
+    auto end() const { return components.end(); }
+
+    /*T& operator[](size_t index) {
+        assert(index < components.size());
+        return components[index];
+    }*/
+
+    const T& operator[](size_t index) const {
+        assert(index < components.size());
+        return components[index];
+    }
+
+    size_t size() const {
+        return components.size();
+    }
+
+    /*class Iterator {
+    public:
+        using MapIt = typename std::unordered_map<size_t, Entity>::iterator;
+
+        Iterator(MapIt it, std::vector<T>& components)
+            : mapIt(it), components(components) {
+        }
+
+        std::pair<Entity, T&> operator*() {
+            size_t index = mapIt->first;
+            return { mapIt->second, components[index] };
+        }
+
+        Iterator& operator++() {
+            ++mapIt;
+            return *this;
+        }
+
+        bool operator!=(const Iterator& other) const {
+            return mapIt != other.mapIt;
+        }
+
+    private:
+        MapIt mapIt;
+        std::vector<T>& components;
+    };
+
+    Iterator beginWithEntity() { return Iterator(indexToEntity.begin(), components); }
+    Iterator endWithEntity() { return Iterator(indexToEntity.end(), components); }*/
+
+
 private:
     std::vector<T> components;
     std::unordered_map<Entity, size_t> entityToIndex;
@@ -131,6 +182,11 @@ public:
     template<typename T>
     T& getComponent(Entity entity) {
         return getComponentStorage<T>()->get(entity);
+    }
+
+    template<typename T>
+    ComponentStorage<T>& getComponents() {
+        return *getComponentStorage<T>();
     }
 
     Signature getSignature(Entity entity) const {

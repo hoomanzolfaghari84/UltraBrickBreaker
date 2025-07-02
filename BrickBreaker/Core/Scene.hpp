@@ -3,8 +3,9 @@
 #include <memory>
 #include <SFML/Graphics.hpp>
 
-#include "../../Core/ECS.hpp"
-#include "../../Core/EventBus.hpp"
+#include "ECS.hpp"
+#include "EventBus.hpp"
+#include "System.hpp"
 
 
 class Scene
@@ -16,7 +17,11 @@ public:
 	virtual void Update(float dt) = 0;
 	virtual void Render(sf::RenderWindow& window) = 0;
 	virtual void Close() = 0;
-	//virtual void HandleEvent(IEvent event) = 0;
+
+	template<typename EventType>
+	void HandleEvent(const EventType& event) const {
+		m_EventBus->emit<EventType>(event);
+	}
 
 	void SetUpdatable(bool value) {
 		m_Updatable = value;
@@ -36,8 +41,11 @@ public:
 
 protected:
 	std::unique_ptr<EntityManager> m_EntityManager = std::make_unique<EntityManager>();
-	//std::unique_ptr<EventBus> m_EventBus = std::make_unique<EventBus>();
+	std::unique_ptr<EventBus> m_EventBus = std::make_unique<EventBus>();
+	//std::vector<std::unique_ptr<Scene>> m_Scenes;
+	std::vector<std::unique_ptr<System>> m_Systems;
 
 	bool m_Updatable = true;
 	bool m_Renderable = true;
+
 };

@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Scene.hpp"
+#include "../../Core/Scene.hpp"
 #include "../../Utils/Constants.hpp"
+#include "../GameEvents.hpp"
 
 class GamePlayScene : public Scene
 {
@@ -24,7 +25,7 @@ public:
 
 	void Close() override;
 
-	//void HandleEvent(IEvent event) override;
+	/*void HandleEvent(IEvent event) override;*/
 
 private:
 
@@ -42,8 +43,13 @@ private:
 	sf::RectangleShape* m_TopBar = nullptr;
 
 
-	void SMovement(float dt);
-	void SBrickSpawner(float dt);
-	void SCollisions();
+
+	//void onBallHitWall(const BallHitWallEvent& event);
+
+	void onBallHitBrick(const BallHitBrickEvent& event);
+
+	void onBallOutOfBounds(const BallOutOfBoundsEvent& event);
+
+	void onBallHitPaddle(const BallHitPaddleEvent& event);
 
 };

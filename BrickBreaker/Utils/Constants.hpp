@@ -18,3 +18,4 @@ constexpr float BRICK_SPACING = 10;
 constexpr float INITIAL_BRICK_SPEED = 25;
 
 constexpr float DEG2RAD = 3.14159265f / 180.f;
+constexpr float EPSILON = 1e-5f;
