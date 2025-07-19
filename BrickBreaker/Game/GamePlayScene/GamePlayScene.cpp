@@ -20,29 +20,25 @@
 //    return brick;
 //}
 
+Color ConvertColor(const sf::Color& sfColor) {
+    return Color(sfColor.r, sfColor.g, sfColor.b, sfColor.a);
+}
 
-void GamePlayScene::Initialize()
-{
-    m_EntityManager->registerComponent<Transform>();
-    m_EntityManager->registerComponent<Kinematics>();
-    m_EntityManager->registerComponent<RenderCircle>();
-    m_EntityManager->registerComponent<RenderRectangle>();
-    m_EntityManager->registerComponent<Tag>();
-    m_EntityManager->registerComponent<Collider>();
 
-    // Paddle
-    m_Paddle = m_EntityManager->createEntity();
+void GamePlayScene::CreatePaddle() {
+    Entity entity = m_EntityManager->createEntity();
+    m_Paddle = entity;
     auto k = Kinematics();
     k.position = { WINDOW_WIDTH / 2.f, WINDOW_HEIGHT - (PADDLE_HEIGHT * 1.5f) };
     k.SetMass(100);
     k.isStatic = false;
 
-    m_EntityManager->addComponent<Kinematics>(m_Paddle, k);
+    m_EntityManager->addComponent<Kinematics>(entity, k);
     auto r = RenderRectangle();
     r.position = k.position;
     r.size = { PADDLE_WIDTH, PADDLE_HEIGHT };
     r.color = Color(sf::Color::White.r, sf::Color::White.g, sf::Color::White.b, sf::Color::White.a);
-    m_EntityManager->addComponent<RenderRectangle>(m_Paddle, r);
+    m_EntityManager->addComponent<RenderRectangle>(entity, r);
 
     auto col = Collider();
     col.type = ColliderShapeType::Rectangle;
@@ -51,18 +47,17 @@ void GamePlayScene::Initialize()
     cs.halfsize = r.size * 0.5f;
     col.shape = cs;
     col.isTrigger = false;
-    m_EntityManager->addComponent<Collider>(m_Paddle, col);
+    m_EntityManager->addComponent<Collider>(entity, col);
 
-    m_EntityManager->addComponent<Tag>(m_Paddle, { "paddle" });
+    m_EntityManager->addComponent<Tag>(entity, { "paddle" });
 
     std::cout << "Created Paddle\n";
-
-
-    // Ball
+}
+void GamePlayScene::CreateBall(Vec2 position) {
     Entity ball = m_EntityManager->createEntity();
     auto kc = Kinematics();
-    kc.position = { WINDOW_WIDTH / 2.f, WINDOW_HEIGHT / 2.f };
-    kc.velocity = { 0.f, INITIAL_BALL_SPEED};
+    kc.position = position;
+    kc.velocity = { -INITIAL_BALL_SPEED, 0.f };
 
     m_EntityManager->addComponent<Kinematics>(ball, kc);
     RenderCircle rc = RenderCircle();
@@ -83,22 +78,43 @@ void GamePlayScene::Initialize()
     m_EntityManager->addComponent<Tag>(ball, { "ball" });
 
     std::cout << "Created Ball\n";
+}
+
+void GamePlayScene::CreateBrick(Vec2 position) {
+
+}
+
+
+void GamePlayScene::Initialize()
+{
+    m_EntityManager->registerComponent<Transform>();
+    m_EntityManager->registerComponent<Kinematics>();
+    m_EntityManager->registerComponent<RenderCircle>();
+    m_EntityManager->registerComponent<RenderRectangle>();
+    m_EntityManager->registerComponent<Tag>();
+    m_EntityManager->registerComponent<Collider>();
+
+    
+    //CreatePaddle();
+
+
+    // Ball
+    CreateBall({ WINDOW_WIDTH / 2.f, WINDOW_HEIGHT / 2.f });
 
     // Ground
+    m_Ground = m_EntityManager->createEntity();
 
-    Entity ground = m_EntityManager->createEntity();
-    m_Ground = ground;
     auto kg = Kinematics();
     kg.position = { WINDOW_WIDTH * 0.5f, WINDOW_HEIGHT - (PADDLE_HEIGHT * 0.5f) + EPSILON };
     kg.isStatic = true;
     kg.SetMass(1000);
-    m_EntityManager->addComponent<Kinematics>(ground, kg);
+    m_EntityManager->addComponent<Kinematics>(m_Ground, kg);
 
     RenderRectangle rg = RenderRectangle();
     rg.position = kg.position;
-    rg.size = {WINDOW_WIDTH, PADDLE_HEIGHT};
+    rg.size = { WINDOW_WIDTH, PADDLE_HEIGHT };
     rg.color = Color(sf::Color::Magenta.r, sf::Color::Magenta.g, sf::Color::Magenta.b, sf::Color::Magenta.a);
-    m_EntityManager->addComponent<RenderRectangle>(ground, rg);
+    m_EntityManager->addComponent<RenderRectangle>(m_Ground, rg);
 
     auto colg = Collider();
     colg.type = ColliderShapeType::Rectangle;
@@ -107,20 +123,89 @@ void GamePlayScene::Initialize()
     csg.halfsize = rg.size * 0.5f;
     colg.shape = csg;
     colg.isTrigger = false;
-    m_EntityManager->addComponent<Collider>(ground, colg);
+    m_EntityManager->addComponent<Collider>(m_Ground, colg);
 
-    m_EntityManager->addComponent<Tag>(ground, { "ground" });
+    m_EntityManager->addComponent<Tag>(m_Ground, { "ground" });
 
-    std::cout << "Created Ball\n";
+    //Walls and Ceiling
+    Entity wall_left = m_EntityManager->createEntity();
+    Entity wall_right = m_EntityManager->createEntity();
+    Entity ceiling = m_EntityManager->createEntity();
 
-    //// Bricks
-    //float startX = 50;
-    //float startY = 50;
-    //for (int row = 0; row < BRICK_ROWS; ++row) {
-    //    for (int col = 0; col < BRICK_COLS; ++col) {
-    //        SpawnBrick(*m_EntityManager, m_BrickSpeed, startX, col, startY, row);
-    //    }
-    //}
+    auto kwl = Kinematics();
+    kwl.position = {-2, WINDOW_HEIGHT * 0.5f - rg.size.y*0.5f - 1 };
+    kwl.isStatic = true;
+    kwl.SetMass(1000);
+    m_EntityManager->addComponent<Kinematics>(wall_left, kwl);
+
+    auto colwl = Collider();
+    colwl.type = ColliderShapeType::Rectangle;
+    colwl.position = kwl.position;
+    auto cswl = RectangleCollisionShape();
+    cswl.halfsize = {4,(WINDOW_HEIGHT - rg.size.y) * 0.5f };
+    colwl.shape = cswl;
+    colwl.isTrigger = false;
+
+    m_EntityManager->addComponent<Collider>(wall_left, colwl);
+
+    RenderRectangle rwl = RenderRectangle();
+    rwl.position = kwl.position;
+    rwl.size = cswl.halfsize * 2.f;
+    rwl.color = Color(sf::Color::Magenta.r, sf::Color::Magenta.g, sf::Color::Magenta.b, sf::Color::Magenta.a);
+    m_EntityManager->addComponent<RenderRectangle>(wall_left, rwl);
+
+    m_EntityManager->addComponent<Tag>(wall_left, {"wall left"});
+
+    // wall right
+    auto kwr = Kinematics();
+    kwr.position = { WINDOW_WIDTH + 2, WINDOW_HEIGHT * 0.5f - rg.size.y * 0.5f - 1};
+    kwr.isStatic = true;
+    kwr.SetMass(1000);
+    m_EntityManager->addComponent<Kinematics>(wall_right, kwr);
+
+    auto colwr = Collider();
+    colwr.type = ColliderShapeType::Rectangle;
+    colwr.position = kwr.position;
+    auto cswr = RectangleCollisionShape();
+    cswr.halfsize = { 4,(WINDOW_HEIGHT - rg.size.y) * 0.5f };
+    colwr.shape = cswr;
+    colwr.isTrigger = false;
+
+    m_EntityManager->addComponent<Collider>(wall_right, colwr);
+
+    RenderRectangle rwr = RenderRectangle();
+    rwr.position = kwr.position;
+    rwr.size = cswr.halfsize * 2.f;
+    rwr.color = Color(sf::Color::Magenta.r, sf::Color::Magenta.g, sf::Color::Magenta.b, sf::Color::Magenta.a);
+    m_EntityManager->addComponent<RenderRectangle>(wall_right, rwr);
+
+    m_EntityManager->addComponent<Tag>(wall_right, { "wall right" });
+
+    // Ceiling
+    auto kwu = Kinematics();
+    kwu.position = { WINDOW_WIDTH * 0.5f, 50 - 2 };
+    kwu.isStatic = true;
+    kwu.SetMass(1000);
+    m_EntityManager->addComponent<Kinematics>(ceiling, kwu);
+
+    auto colwu = Collider();
+    colwu.type = ColliderShapeType::Rectangle;
+    colwu.position = kwr.position;
+    auto cswu = RectangleCollisionShape();
+    cswu.halfsize = { (WINDOW_WIDTH) * 0.5f - cswr.halfsize.x, 4};
+    colwu.shape = cswu;
+    colwu.isTrigger = false;
+
+    m_EntityManager->addComponent<Collider>(ceiling, colwu);
+
+    RenderRectangle rwu = RenderRectangle();
+    rwu.position = kwu.position;
+    rwu.size = cswu.halfsize * 2.f;
+    rwu.color = Color(sf::Color::Magenta.r, sf::Color::Magenta.g, sf::Color::Magenta.b, sf::Color::Magenta.a);
+    m_EntityManager->addComponent<RenderRectangle>(ceiling, rwu);
+
+    m_EntityManager->addComponent<Tag>(ceiling, { "ceiling" });
+
 
 
     // Top Bar
@@ -132,6 +217,7 @@ void GamePlayScene::Initialize()
     if (!m_Font.openFromFile("assets/arial.ttf")) {
         std::cerr << "Failed to load font!\n";
     }
+
 
     // Score Text
     m_ScoreText = new sf::Text(m_Font);
@@ -182,7 +268,7 @@ void GamePlayScene::Initialize()
         }
     );
 
-    /*m_EventBus->subscribe<CollisionEvent>([this](const CollisionEvent& e) {
+    m_EventBus->subscribe<CollisionEvent>([this](const CollisionEvent& e) {
         if (e.entityA == this->m_Ground) {
 
         }
@@ -191,7 +277,7 @@ void GamePlayScene::Initialize()
         }
 
         }
-    );*/
+    );
 
     //Systems
     auto collisionSystem = std::make_unique<CollisionSystem>(*m_EventBus);

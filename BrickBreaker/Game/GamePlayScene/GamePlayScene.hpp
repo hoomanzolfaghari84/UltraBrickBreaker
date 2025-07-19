@@ -46,6 +46,10 @@ private:
 	sf::RectangleShape* m_TopBar = nullptr;
 
 
+	void CreatePaddle();
+	void CreateBall(Vec2 position);
+	void CreateBrick(Vec2 position);
+
 
 	//void onBallHitWall(const BallHitWallEvent& event);
 
